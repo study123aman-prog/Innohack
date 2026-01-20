@@ -1,36 +1,39 @@
 import streamlit as st
-from speech_to_text import speech_to_text
-from sign_to_text import sign_to_text
 import tempfile
+from speech_to_text import speech_to_text
+from emotion_detector import detect_emotion
 
-st.set_page_config(page_title="AI Assistive Framework", layout="centered")
+st.set_page_config(page_title="Emotion-Aware Assistive Platform")
 
-st.title("🤖 AI Assistive Framework for Deaf & Hard-of-Hearing")
+st.title("🧠 Emotion-Aware Assistive Communication Platform")
 
-st.write("Choose a mode of communication:")
-
-option = st.radio(
-    "Select Input Type",
-    ("Speech to Text", "Hand Sign to Text")
+st.write(
+    "Real-time captions enriched with emotional and urgency awareness "
+    "for deaf and hard-of-hearing users."
 )
 
-# ---------------- SPEECH TO TEXT ----------------
-if option == "Speech to Text":
-    st.subheader("🎤 Speech to Text")
-    audio_file = st.file_uploader("Upload an audio file (.wav)", type=["wav", "mp3"])
+audio = st.file_uploader("Upload Speech Audio", type=["wav", "mp3"])
 
-    if audio_file:
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            tmp.write(audio_file.read())
-            text = speech_to_text(tmp.name)
-            st.success("Recognized Text:")
-            st.write(text)
+if audio:
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(audio.read())
+        transcript = speech_to_text(tmp.name)
 
-# ---------------- SIGN TO TEXT ----------------
-elif option == "Hand Sign to Text":
-    st.subheader("✋ Hand Sign to Text")
+    emotion_data = detect_emotion(transcript)
 
-    if st.button("Start Camera"):
-        result = sign_to_text()
-        st.success("Output:")
-        st.write(result)
+    st.markdown(
+        f"""
+        <div style="
+            padding:20px;
+            border-radius:10px;
+            background-color:{emotion_data['color']};
+            color:white;
+            font-size:22px;
+        ">
+        {emotion_data['icon']} <b>{emotion_data['emotion']}</b><br><br>
+        {transcript}<br><br>
+        Confidence: {emotion_data['confidence']}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
