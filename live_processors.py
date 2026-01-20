@@ -1,49 +1,35 @@
 import av
-import cv2
 import numpy as np
-import mediapipe as mp
-import whisper
+import cv2
+
+from speech_to_text import speech_to_text_live
+from sign_to_text import sign_to_text_live
 from emotion_detector import detect_emotion
-
-# Load models once
-whisper_model = whisper.load_model("base")
-
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(max_num_hands=1)
-
-latest_transcript = ""
-latest_emotion = {}
+import live_state
 
 def audio_frame_callback(frame: av.AudioFrame):
-    global latest_transcript, latest_emotion
-
     audio = frame.to_ndarray()
-    audio = audio.astype(np.float32)
+    audio = audio.astype("float32")
 
-    # Save small chunk
-    whisper_result = whisper_model.transcribe(audio, fp16=False)
-    latest_transcript = whisper_result["text"]
-
-    if latest_transcript:
-        latest_emotion = detect_emotion(latest_transcript)
+    text = speech_to_text_live(audio)
+    if text:
+        live_state.latest_speech = text
+        live_state.latest_emotion = detect_emotion(text)
 
     return frame
 
-
 def video_frame_callback(frame: av.VideoFrame):
     img = frame.to_ndarray(format="bgr24")
-    rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    result = hands.process(rgb)
 
-    if result.multi_hand_landmarks:
+    sign = sign_to_text_live(img)
+    if sign:
+        live_state.latest_sign = sign
+
+    if sign:
         cv2.putText(
-            img,
-            "Hand Sign Detected",
-            (30, 40),
+            img, sign, (30, 40),
             cv2.FONT_HERSHEY_SIMPLEX,
-            1,
-            (0, 255, 0),
-            2,
+            1, (0, 255, 0), 2
         )
 
     return av.VideoFrame.from_ndarray(img, format="bgr24")
