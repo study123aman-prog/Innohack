@@ -1,0 +1,10 @@
+streamlit
+streamlit-webrtc
+openai-whisper
+torch
+opencv-python
+mediapipe
+numpy
+pyttsx3
+av
+soundfile

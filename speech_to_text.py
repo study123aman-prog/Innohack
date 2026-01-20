@@ -1,20 +1,21 @@
-import whisper
-import tempfile
-import soundfile as sf
+import whisper 
+import numpy as np 
+import sounddevice as sd 
 
-model = whisper.load_model("base")
+model=whisper.load_model("base")
 
-# OFFLINE (file upload)
-def speech_to_text(audio_path):
-    result = model.transcribe(audio_path)
+def record_audio(duration=5, fs=16000):
+    audio=sd.rec(int(duration*fs), samplerate=fs, channels=1)
+    sd.wait()
+    return np.squeeze(audio)
+
+def speech_to_txt():
+    audio=record_audio()
+    result=model.transcribe(audio, fp16=False)
     return result["text"]
 
-# LIVE (audio chunks)
-def speech_to_text_live(audio_chunk, sample_rate=16000):
-    if audio_chunk is None or len(audio_chunk) == 0:
-        return ""
-
-    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
-        sf.write(tmp.name, audio_chunk, sample_rate)
-        result = model.transcribe(tmp.name, fp16=False)
-        return result["text"]
+if _name_ == "_main_":
+    print("Recording... Speak now.")
+    text = speech_to_txt()
+    print("Transcribed Text:")
+    print(text)
